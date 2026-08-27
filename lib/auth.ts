@@ -60,8 +60,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           create: { email: identifier, url },
         });
 
-        if (process.env.NODE_ENV !== "production") {
-          console.log(`\n[dev] Magic link para ${identifier}:\n${url}\n`);
+        if (process.env.NODE_ENV !== "production" || !process.env.RESEND_API_KEY) {
+          console.log(`\n[link] Magic link para ${identifier}:\n${url}\n`);
           return;
         }
         const { Resend: ResendClient } = await import("resend");
