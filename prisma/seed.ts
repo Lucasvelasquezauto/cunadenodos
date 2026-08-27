@@ -1,8 +1,14 @@
 import { PrismaClient, Role, Org, ConversationStatus } from "@prisma/client";
+import { hashPassword } from "../lib/passwords";
 
 const prisma = new PrismaClient();
 
+// Misma contraseña para todas las cuentas de demo/seed — debe coincidir con
+// TEST_PASSWORD en e2e/helpers.ts, que loguea contra estas mismas cuentas.
+const SEED_PASSWORD = "TestPass123!";
+
 async function main() {
+  const passwordHash = await hashPassword(SEED_PASSWORD);
   const cohort = await prisma.cohort.upsert({
     where: { id: "seed-cohort-2026-1" },
     update: {},
@@ -19,12 +25,16 @@ async function main() {
     create: { id: 1, guestModeEnabled: false },
   });
 
-  // Cuentas de demo, tratadas como si ya hubieran consentido — no pasan por
-  // el flujo real de /invite/[token] (ver SPEC-onboarding.md). Puesto tanto
-  // en `create` como en `update`: mismo aprendizaje que el bug ya
-  // documentado de `update: {}` que dejaba nombres desactualizados al
-  // re-correr el seed sobre datos existentes.
-  const consent = { consentDataProcessingAt: new Date(), consentDirectoryAt: new Date() };
+  // Cuentas de demo, tratadas como si ya hubieran consentido y con
+  // contraseña ya puesta — no pasan por el flujo real de /invite/[token]
+  // (ver SPEC-onboarding.md). Puesto tanto en `create` como en `update`:
+  // mismo aprendizaje que el bug ya documentado de `update: {}` que dejaba
+  // nombres desactualizados al re-correr el seed sobre datos existentes.
+  const consent = {
+    consentDataProcessingAt: new Date(),
+    consentDirectoryAt: new Date(),
+    passwordHash,
+  };
 
   const fakeUsers: Array<{
     email: string;

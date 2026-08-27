@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { prisma } from "../lib/db";
-import { loginAs, withDbRetry } from "./helpers";
+import { loginAs, TEST_PASSWORD, withDbRetry } from "./helpers";
 
 test("el toggle de modo invitado controla el acceso a /invitado", async ({ page }) => {
-  await loginAs(page, "admin@demo.board");
+  await loginAs(page, "admin@demo.board", TEST_PASSWORD);
 
   // Estado inicial: apagado (default de seed).
   await page.goto("/invitado");

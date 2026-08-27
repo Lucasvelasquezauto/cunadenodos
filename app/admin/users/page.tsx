@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { Role } from "@prisma/client";
 import { GenerateAndCopy } from "@/components/GenerateAndCopy";
-import { generateAccessLink } from "@/app/admin/invitations/actions";
+import { generatePasswordResetLink } from "@/app/admin/invitations/actions";
 import { createUser, deleteUser } from "./actions";
 
 export default async function UsersPage() {
@@ -21,9 +21,17 @@ export default async function UsersPage() {
         <h2 className="text-sm font-medium">Nuevo usuario</h2>
         <input
           name="email"
-          type="email"
+          type="text"
           required
-          placeholder="correo@ejemplo.com"
+          placeholder="Correo, o usuario simple para institución (ej. EAFIT)"
+          className="field"
+        />
+        <input
+          name="password"
+          type="text"
+          required
+          minLength={8}
+          placeholder="Contraseña inicial (mínimo 8 caracteres)"
           className="field"
         />
         <select name="role" required defaultValue="" className="field">
@@ -76,8 +84,8 @@ export default async function UsersPage() {
               </form>
             </div>
             <GenerateAndCopy
-              label="Copiar link de acceso"
-              action={generateAccessLink.bind(null, user.email)}
+              label="Generar link para restablecer contraseña"
+              action={generatePasswordResetLink.bind(null, user.id)}
             />
           </li>
         ))}

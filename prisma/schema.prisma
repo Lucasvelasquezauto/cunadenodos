@@ -42,6 +42,7 @@ model User {
   image         String?
   role          Role
   org           Org?
+  passwordHash  String?
   cohortId      String
   cohort        Cohort    @relation(fields: [cohortId], references: [id])
   createdAt     DateTime  @default(now())
@@ -61,6 +62,8 @@ model User {
   conversationsStarted  Conversation[] @relation("ConversationsStarted")
   conversationsReceived Conversation[] @relation("ConversationsReceived")
   messages              Message[]
+
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Account {
@@ -107,17 +110,19 @@ model AppSettings {
   guestModeEnabled Boolean @default(false)
 }
 
-// Guarda el último link de acceso generado por correo, para que el admin lo
-// pueda copiar manualmente (T12) y para que los tests e2e prueben el flujo
-// real sin depender de un correo de verdad. Persistido en DB (no en memoria)
-// porque Next.js compila Server Actions y Route Handlers en capas separadas
-// con módulos distintos en dev, y en producción cada invocación serverless
-// puede caer en una instancia distinta — una variable en memoria no se
-// comparte de forma confiable entre esas dos llamadas.
-model LastLinkCache {
-  email     String   @id
-  url       String
-  createdAt DateTime @default(now())
+// Token de un solo uso para fijar o restablecer contraseña. El admin lo
+// genera desde /admin/users y lo reenvía manualmente (WhatsApp, etc.) — no
+// depende de que llegue ningún correo. Sirve tanto para la primera
+// contraseña de institución/admin como para "olvidé mi contraseña" de
+// cualquier rol; es el mismo mecanismo en ambos casos.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model InvitationLink {

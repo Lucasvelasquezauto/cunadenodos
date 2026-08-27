@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { prisma } from "../lib/db";
-import { loginAs, withDbRetry } from "./helpers";
+import { loginAs, TEST_PASSWORD, testPasswordHash, withDbRetry } from "./helpers";
 
 const E2E_EMPRENDEDOR = "e2e-empresa@ejemplo.com";
 let cohortId: string;
@@ -10,10 +10,17 @@ test.beforeAll(async () => {
     const cohort = await prisma.cohort.findFirst({ where: { isActive: true } });
     if (!cohort) throw new Error("No hay cohorte activa — corre el seed primero.");
     cohortId = cohort.id;
+    const passwordHash = await testPasswordHash();
     await prisma.user.upsert({
       where: { email: E2E_EMPRENDEDOR },
-      update: {},
-      create: { email: E2E_EMPRENDEDOR, name: "Emprendedor E2E", role: "EMPRENDEDOR", cohortId },
+      update: { passwordHash },
+      create: {
+        email: E2E_EMPRENDEDOR,
+        name: "Emprendedor E2E",
+        role: "EMPRENDEDOR",
+        cohortId,
+        passwordHash,
+      },
     });
   });
 });
@@ -27,7 +34,7 @@ test.afterAll(async () => {
 });
 
 test("empresas y talento son navegables con cualquier cuenta con sesión", async ({ page }) => {
-  await loginAs(page, "admin@demo.board");
+  await loginAs(page, "admin@demo.board", TEST_PASSWORD);
 
   await page.goto("/empresas");
   await expect(page.getByText("Café Sereno")).toBeVisible();
@@ -47,11 +54,11 @@ test("el estado laboral oculto no se muestra a un tercero, pero sí a admin", as
   });
   if (!hiddenProfile) throw new Error("No hay perfil de seed con employmentStatusVisible=false.");
 
-  await loginAs(page, "empleable@demo.board");
+  await loginAs(page, "empleable@demo.board", TEST_PASSWORD);
   await page.goto(`/talento/${hiddenProfile.id}`);
   await expect(page.getByText("Estado", { exact: true })).not.toBeVisible();
 
-  await loginAs(page, "admin@demo.board");
+  await loginAs(page, "admin@demo.board", TEST_PASSWORD);
   await page.goto(`/talento/${hiddenProfile.id}`);
   await expect(page.getByText("Estado", { exact: true })).toBeVisible();
 });
@@ -63,7 +70,7 @@ test("un emprendedor sin empresa la crea desde /empresas/mia, y solo edita la pr
   // de 45s se queda corto para este flujo.
   test.setTimeout(90_000);
 
-  await loginAs(page, E2E_EMPRENDEDOR);
+  await loginAs(page, E2E_EMPRENDEDOR, TEST_PASSWORD);
   await page.goto("/empresas/mia");
 
   await page.fill("#name", "Empresa E2E");
@@ -80,14 +87,14 @@ test("un emprendedor sin empresa la crea desde /empresas/mia, y solo edita la pr
   expect(saved?.name).toBe("Empresa E2E");
 
   // Otro emprendedor real (del seed) no ve ni edita esta empresa desde su propio /empresas/mia.
-  await loginAs(page, "emprendedor@demo.board");
+  await loginAs(page, "emprendedor@demo.board", TEST_PASSWORD);
   await page.goto("/empresas/mia");
   const nameField = page.locator("#name");
   await expect(nameField).not.toHaveValue("Empresa E2E");
 });
 
 test("un rol distinto de emprendedor no puede entrar a /empresas/mia", async ({ page }) => {
-  await loginAs(page, "empleable@demo.board");
+  await loginAs(page, "empleable@demo.board", TEST_PASSWORD);
   await page.goto("/empresas/mia");
   await expect(page).toHaveURL("/");
 });

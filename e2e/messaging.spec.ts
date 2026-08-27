@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { prisma } from "../lib/db";
-import { loginAs, withDbRetry } from "./helpers";
+import { loginAs, TEST_PASSWORD, testPasswordHash, withDbRetry } from "./helpers";
 
 const E2E_SENDER = "e2e-msg-sender@ejemplo.com";
 const E2E_RECEIVER = "e2e-msg-receiver@ejemplo.com";
@@ -16,11 +16,18 @@ test.beforeAll(async () => {
     const cohort = await prisma.cohort.findFirst({ where: { isActive: true } });
     if (!cohort) throw new Error("No hay cohorte activa — corre el seed primero.");
     const cohortId = cohort.id;
+    const passwordHash = await testPasswordHash();
 
     const sender = await prisma.user.upsert({
       where: { email: E2E_SENDER },
-      update: {},
-      create: { email: E2E_SENDER, name: "Emprendedor Mensajería E2E", role: "EMPRENDEDOR", cohortId },
+      update: { passwordHash },
+      create: {
+        email: E2E_SENDER,
+        name: "Emprendedor Mensajería E2E",
+        role: "EMPRENDEDOR",
+        cohortId,
+        passwordHash,
+      },
     });
     await prisma.company.upsert({
       where: { ownerId: sender.id },
@@ -38,8 +45,14 @@ test.beforeAll(async () => {
 
     const decliner = await prisma.user.upsert({
       where: { email: E2E_DECLINER },
-      update: {},
-      create: { email: E2E_DECLINER, name: "Emprendedor Rechazo E2E", role: "EMPRENDEDOR", cohortId },
+      update: { passwordHash },
+      create: {
+        email: E2E_DECLINER,
+        name: "Emprendedor Rechazo E2E",
+        role: "EMPRENDEDOR",
+        cohortId,
+        passwordHash,
+      },
     });
     await prisma.company.upsert({
       where: { ownerId: decliner.id },
@@ -57,8 +70,14 @@ test.beforeAll(async () => {
 
     const receiver = await prisma.user.upsert({
       where: { email: E2E_RECEIVER },
-      update: {},
-      create: { email: E2E_RECEIVER, name: "Empleable Mensajería E2E", role: "EMPLEABLE", cohortId },
+      update: { passwordHash },
+      create: {
+        email: E2E_RECEIVER,
+        name: "Empleable Mensajería E2E",
+        role: "EMPLEABLE",
+        cohortId,
+        passwordHash,
+      },
     });
     await prisma.talentProfile.upsert({
       where: { ownerId: receiver.id },
@@ -104,7 +123,7 @@ test("ciclo completo: contactar, solicitud pendiente, aceptar, intercambio de me
 
   const receiverId = (await prisma.user.findUniqueOrThrow({ where: { email: E2E_RECEIVER } })).id;
 
-  await loginAs(page, E2E_SENDER);
+  await loginAs(page, E2E_SENDER, TEST_PASSWORD);
   await page.goto(`/mensajes/nueva?to=${receiverId}`);
   await page.fill("#body", "Hola, quiero contactarte para un proyecto.");
   await page.getByRole("button", { name: "Enviar solicitud" }).click();
@@ -116,7 +135,7 @@ test("ciclo completo: contactar, solicitud pendiente, aceptar, intercambio de me
   await expect(page.getByText("Esperando respuesta")).toBeVisible({ timeout: 20_000 });
   const conversationUrl = page.url();
 
-  await loginAs(page, E2E_RECEIVER);
+  await loginAs(page, E2E_RECEIVER, TEST_PASSWORD);
   await page.goto(conversationUrl);
   await expect(page.getByText("¿Aceptas la solicitud?")).toBeVisible({ timeout: 20_000 });
   await page.getByRole("button", { name: "Aceptar" }).click();
@@ -141,14 +160,14 @@ test("una conversación rechazada no admite más mensajes", async ({ page }) => 
 
   const receiverId = (await prisma.user.findUniqueOrThrow({ where: { email: E2E_RECEIVER } })).id;
 
-  await loginAs(page, E2E_DECLINER);
+  await loginAs(page, E2E_DECLINER, TEST_PASSWORD);
   await page.goto(`/mensajes/nueva?to=${receiverId}`);
   await page.fill("#body", "Hola, ¿te interesaría un proyecto con nosotros?");
   await page.getByRole("button", { name: "Enviar solicitud" }).click();
   await page.waitForURL(/\/mensajes\/[a-z0-9]+$/, { timeout: 20_000 });
   const conversationUrl = page.url();
 
-  await loginAs(page, E2E_RECEIVER);
+  await loginAs(page, E2E_RECEIVER, TEST_PASSWORD);
   await page.goto(conversationUrl);
   await page.getByRole("button", { name: "Rechazar" }).click();
 
@@ -176,7 +195,7 @@ test("un tercero (incluido admin) no puede abrir la conversación de otros", asy
     },
   });
 
-  await loginAs(page, "admin@demo.board");
+  await loginAs(page, "admin@demo.board", TEST_PASSWORD);
   await page.goto(`/mensajes/${conversation.id}`);
 
   await expect(page.getByText(secretBody)).not.toBeVisible();

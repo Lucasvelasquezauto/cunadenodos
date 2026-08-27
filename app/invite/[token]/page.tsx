@@ -5,7 +5,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   missing_email: "Escribe un correo válido.",
   missing_track: "Selecciona tu ruta (emprendimiento o empleabilidad).",
   missing_consent: "Debes aceptar los dos consentimientos para crear tu cuenta.",
-  signin_failed: "No pudimos enviarte el enlace de acceso. Intenta de nuevo.",
+  weak_password: "La contraseña debe tener al menos 8 caracteres.",
+  password_mismatch: "Las contraseñas no coinciden.",
+  already_registered:
+    "Ese correo ya tiene una cuenta creada. Ve a la pantalla de ingreso para entrar con tu contraseña.",
 };
 
 export default async function InvitePage({
@@ -38,8 +41,8 @@ export default async function InvitePage({
       <div>
         <h1 className="text-2xl font-semibold">Crea tu cuenta</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Escribe tu correo y elige tu ruta en el programa. Te enviaremos un enlace de acceso,
-          sin contraseña.
+          Escribe tu correo, elige tu ruta en el programa y crea tu contraseña. La vas a
+          necesitar cada vez que vuelvas a entrar.
         </p>
       </div>
 
@@ -55,6 +58,22 @@ export default async function InvitePage({
           name="email"
           required
           placeholder="tu@correo.com"
+          className="field"
+        />
+        <input
+          type="password"
+          name="password"
+          required
+          minLength={8}
+          placeholder="Contraseña (mínimo 8 caracteres)"
+          className="field"
+        />
+        <input
+          type="password"
+          name="confirmPassword"
+          required
+          minLength={8}
+          placeholder="Confirma tu contraseña"
           className="field"
         />
         <fieldset className="flex flex-col gap-2 text-sm">

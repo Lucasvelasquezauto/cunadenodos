@@ -1,97 +1,59 @@
 import NextAuth from "next-auth";
-import Resend from "next-auth/providers/resend";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { Prisma } from "@prisma/client";
+import Credentials from "next-auth/providers/credentials";
 import { prisma } from "./db";
-
-// El adapter base de Auth.js no es idempotente al borrar una sesión que ya no
-// existe (ej. si el admin acaba de eliminar la cuenta mientras el navegador
-// todavía tenía la cookie vieja) — sin este parche, esa carrera tumba el login
-// con un error sin capturar en vez de tratarse como "ya no había sesión".
-const baseAdapter = PrismaAdapter(prisma);
-const adapter = {
-  ...baseAdapter,
-  async deleteSession(sessionToken: string): Promise<void> {
-    try {
-      await baseAdapter.deleteSession?.(sessionToken);
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2025"
-      ) {
-        return;
-      }
-      throw error;
-    }
-  },
-};
-
-// Guarda el último link generado por correo, para que el admin lo pueda
-// copiar manualmente desde el panel como respaldo si el envío automático no
-// llega. Persistido en DB (ver comentario en prisma/schema.prisma) — una
-// variable en memoria no sobrevive entre requests separados de forma
-// confiable, ni en Next.js dev (capas de compilación separadas) ni en
-// serverless (instancias distintas).
-export async function getLastGeneratedLink(email: string): Promise<string | null> {
-  const entry = await prisma.lastLinkCache.findUnique({ where: { email } });
-  if (entry && Date.now() - entry.createdAt.getTime() < 60_000) {
-    return entry.url;
-  }
-  return null;
-}
+import { verifyPassword } from "./passwords";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter,
-  session: { strategy: "database" },
+  session: { strategy: "jwt" },
   trustHost: true,
   pages: {
     signIn: "/login",
-    verifyRequest: "/verify-request",
     error: "/login",
   },
   providers: [
-    Resend({
-      apiKey: process.env.RESEND_API_KEY,
-      from: process.env.EMAIL_FROM,
-      async sendVerificationRequest({ identifier, url, provider }) {
-        await prisma.lastLinkCache.upsert({
-          where: { email: identifier },
-          update: { url, createdAt: new Date() },
-          create: { email: identifier, url },
-        });
+    Credentials({
+      credentials: {
+        email: {},
+        password: {},
+      },
+      async authorize(credentials) {
+        const email = credentials?.email;
+        const password = credentials?.password;
+        if (typeof email !== "string" || typeof password !== "string") return null;
 
-        if (process.env.NODE_ENV !== "production" || !process.env.RESEND_API_KEY) {
-          console.log(`\n[link] Magic link para ${identifier}:\n${url}\n`);
-          return;
-        }
-        const { Resend: ResendClient } = await import("resend");
-        const resend = new ResendClient(provider.apiKey);
-        await resend.emails.send({
-          from: provider.from as string,
-          to: identifier,
-          subject: "Tu acceso al Board SER ANDI",
-          html: `<p>Hola,</p><p>Haz clic para entrar al Board SER ANDI:</p><p><a href="${url}">${url}</a></p><p>Si no esperabas este correo, ignóralo.</p>`,
-        });
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user?.passwordHash) return null;
+
+        const valid = await verifyPassword(password, user.passwordHash);
+        if (!valid) return null;
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          org: user.org,
+          cohortId: user.cohortId,
+        };
       },
     }),
   ],
   callbacks: {
-    // Puerta cerrada de /login: solo correos que ya existen como User pueden
-    // recibir el magic link. La creación de cuentas nuevas ocurre únicamente
-    // vía /invite/[token] (módulo identity, ver SPEC-identity.md).
-    async signIn({ user }) {
-      if (!user?.email) return false;
-      const existing = await prisma.user.findUnique({
-        where: { email: user.email },
-      });
-      return Boolean(existing);
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id as string;
+        token.role = user.role;
+        token.org = user.org;
+        token.cohortId = user.cohortId;
+      }
+      return token;
     },
-    async session({ session, user }) {
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = user.id;
-        session.user.role = user.role;
-        session.user.org = user.org;
-        session.user.cohortId = user.cohortId;
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.org = token.org;
+        session.user.cohortId = token.cohortId;
       }
       return session;
     },

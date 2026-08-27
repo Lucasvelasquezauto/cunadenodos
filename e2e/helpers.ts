@@ -1,4 +1,14 @@
 import type { Page } from "@playwright/test";
+import { hashPassword } from "../lib/passwords";
+
+// Contraseña única para todas las cuentas creadas dentro de los tests e2e
+// (seed y las creadas ad-hoc en cada spec) — no hay nada secreto que
+// proteger aquí, solo necesita ser la misma en todos lados.
+export const TEST_PASSWORD = "TestPass123!";
+
+export async function testPasswordHash(): Promise<string> {
+  return hashPassword(TEST_PASSWORD);
+}
 
 // El pooler gratuito de Supabase falla de forma intermitente bajo carga (lo
 // vimos varias veces durante el desarrollo). Reintenta cualquier llamada a
@@ -16,31 +26,13 @@ export async function withDbRetry<T>(fn: () => Promise<T>, attempts = 3): Promis
   throw lastError;
 }
 
-// El pooler gratuito de Supabase a veces responde con latencia alta bajo
-// carga (ya lo vimos con timeouts intermitentes de conexión durante el
-// desarrollo) — un solo intento de lectura justo después de escribir puede
-// llegar antes de que el valor esté disponible. Reintenta con espera corta.
-export async function getMagicLink(page: Page, email: string): Promise<string> {
-  for (let attempt = 0; attempt < 6; attempt++) {
-    const res = await page.request.get(
-      `/api/test/last-link?email=${encodeURIComponent(email)}`,
-      { headers: { "x-e2e-secret": process.env.E2E_TEST_SECRET ?? "" } },
-    );
-    const body = await res.json();
-    if (body.link) return body.link as string;
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-  throw new Error(`No se generó ningún link para ${email}`);
-}
-
-export async function loginAs(page: Page, email: string): Promise<void> {
+export async function loginAs(page: Page, email: string, password: string): Promise<void> {
   await page.goto("/login");
   await page.fill('input[name="email"]', email);
+  await page.fill('input[name="password"]', password);
   await page.click('button[type="submit"]');
   // El primer test del suite puede pegarle a un servidor de dev recién
   // levantado que todavía está compilando rutas por primera vez — timeout
   // generoso para no confundir ese costo de arranque con una falla real.
-  await page.getByText("Revisa tu correo").waitFor({ timeout: 30_000 });
-  const link = await getMagicLink(page, email);
-  await page.goto(link);
+  await page.waitForURL("/", { timeout: 30_000 });
 }

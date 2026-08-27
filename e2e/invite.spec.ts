@@ -1,10 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { prisma } from "../lib/db";
-import { getMagicLink, withDbRetry } from "./helpers";
+import { withDbRetry } from "./helpers";
 
 const TEST_EMAIL = "e2e-invite@ejemplo.com";
 const TEST_EMAIL_NO_CONSENT = "e2e-invite-no-consent@ejemplo.com";
 const TEST_EMAIL_BANNER = "e2e-invite-banner@ejemplo.com";
+const TEST_PASSWORD = "InvitePass123!";
 let validToken: string | undefined;
 let expiredToken: string | undefined;
 
@@ -54,18 +55,21 @@ test("un token de invitación inexistente muestra un mensaje claro", async ({ pa
   await expect(page.getByText("no existe")).toBeVisible();
 });
 
-test("un token válido crea la cuenta con la ruta elegida y el consentimiento marcado", async ({ page }) => {
+test("un token válido crea la cuenta con la ruta elegida, contraseña y consentimiento, y entra directo", async ({ page }) => {
   await page.goto(`/invite/${validToken}`);
   await page.fill('input[name="email"]', TEST_EMAIL);
+  await page.fill('input[name="password"]', TEST_PASSWORD);
+  await page.fill('input[name="confirmPassword"]', TEST_PASSWORD);
   await page.check('input[name="track"][value="EMPLEABLE"]');
   await page.check('input[name="consentDataProcessing"]');
   await page.check('input[name="consentDirectory"]');
   await page.click('button[type="submit"]');
 
-  await expect(page.getByText("Revisa tu correo")).toBeVisible({ timeout: 15_000 });
+  await expect(page).toHaveURL("/", { timeout: 15_000 });
 
   const user = await prisma.user.findUnique({ where: { email: TEST_EMAIL } });
   expect(user?.role).toBe("EMPLEABLE");
+  expect(user?.passwordHash).not.toBeNull();
   expect(user?.consentDataProcessingAt).not.toBeNull();
   expect(user?.consentDirectoryAt).not.toBeNull();
 });
@@ -73,6 +77,8 @@ test("un token válido crea la cuenta con la ruta elegida y el consentimiento ma
 test("sin marcar los consentimientos, el servidor rechaza aunque se salte la validación del navegador", async ({ page }) => {
   await page.goto(`/invite/${validToken}`);
   await page.fill('input[name="email"]', TEST_EMAIL_NO_CONSENT);
+  await page.fill('input[name="password"]', TEST_PASSWORD);
+  await page.fill('input[name="confirmPassword"]', TEST_PASSWORD);
   await page.check('input[name="track"][value="EMPLEABLE"]');
   // Se salta la validación nativa del navegador a propósito, para probar que
   // el rechazo real está en el servidor (joinWithInvitation), no solo en el
@@ -93,14 +99,13 @@ test("sin marcar los consentimientos, el servidor rechaza aunque se salte la val
 test("el banner de perfil incompleto aparece hasta completar el perfil", async ({ page }) => {
   await page.goto(`/invite/${validToken}`);
   await page.fill('input[name="email"]', TEST_EMAIL_BANNER);
+  await page.fill('input[name="password"]', TEST_PASSWORD);
+  await page.fill('input[name="confirmPassword"]', TEST_PASSWORD);
   await page.check('input[name="track"][value="EMPLEABLE"]');
   await page.check('input[name="consentDataProcessing"]');
   await page.check('input[name="consentDirectory"]');
   await page.click('button[type="submit"]');
-  await expect(page.getByText("Revisa tu correo")).toBeVisible({ timeout: 15_000 });
-
-  const link = await getMagicLink(page, TEST_EMAIL_BANNER);
-  await page.goto(link);
+  await expect(page).toHaveURL("/", { timeout: 15_000 });
 
   await expect(page.getByText("Todavía no completas tu perfil")).toBeVisible();
 
