@@ -3,11 +3,11 @@ import Link from "next/link";
 export default function InvitadoHomePage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-14 text-center">
-      <h1 className="text-3xl font-extrabold">Board SER ANDI — vista de invitado</h1>
+      <h1 className="text-3xl font-extrabold">Cuna de Nodos — vista de invitado</h1>
       <p className="mx-auto mt-4 max-w-xl text-base text-gray-600">
-        Una vista resumida de los emprendimientos y el talento de la Beca SER ANDI, pensada para
-        quien todavía no tiene cuenta — por ejemplo, en una feria. Si ya formas parte del programa,
-        ingresa con tu cuenta para ver los perfiles completos y escribirle a quien quieras.
+        Presentación de los emprendimientos y el talento formado en la Beca SER ANDI, dirigida a
+        actores externos que buscan soluciones e integración con el ecosistema de Inteligencia
+        Artificial.
       </p>
 
       <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2">

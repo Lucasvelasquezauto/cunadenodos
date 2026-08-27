@@ -58,12 +58,14 @@ export default async function HomePage() {
             className="mx-auto h-14 w-auto sm:h-16"
           />
           <h1 className="mx-auto mt-6 max-w-2xl text-3xl font-extrabold sm:text-4xl">
-            El board de cierre de la <span className="text-primary">Beca SER ANDI</span>
+            CUNA DE NODOS
           </h1>
+          <p className="mx-auto mt-2 max-w-xl text-lg font-semibold text-primary">
+            Plataforma de co-incubación de la Beca SER ANDI
+          </p>
           <p className="mx-auto mt-4 max-w-xl text-base text-gray-600">
             Un espacio de contacto entre los emprendimientos y el talento formado en la Beca SER
-            ANDI — Inteligencia Artificial, un programa de SER ANDI Fondo Social y ANDI Seccional
-            Antioquia | Más País, operado por Universidad EAFIT y NODO.
+            ANDI — Inteligencia Artificial, operado por Universidad EAFIT y NODO.
           </p>
 
           {session?.user ? (
@@ -102,15 +104,16 @@ export default async function HomePage() {
           <CardOrLink href={empresasHref}>
             <h2>Ruta de emprendimiento</h2>
             <p className="mt-2 text-sm text-gray-600">
-              Empresas ya registradas en Cámara de Comercio, listas para posicionarse, encontrar
-              clientes y tejer alianzas dentro de la red del programa.
+              Empresas acompañadas por el programa, listas para posicionarse, ampliar su base de
+              clientes y tejer alianzas dentro de la red del programa para construir valor
+              económico y social.
             </p>
           </CardOrLink>
           <CardOrLink href={talentoHref}>
             <h2>Ruta de empleabilidad</h2>
             <p className="mt-2 text-sm text-gray-600">
-              Talento formado en la Beca SER ANDI en búsqueda de empleo o proyectos, con perfil
-              profesional visible para toda la red.
+              Talento multidisciplinario formado en la Beca SER ANDI, con experiencia, trayectoria
+              y capacidades para vincularse como socios o colaboradores de proyectos en marcha.
             </p>
           </CardOrLink>
         </div>
