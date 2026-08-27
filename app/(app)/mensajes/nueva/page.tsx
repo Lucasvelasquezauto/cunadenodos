@@ -60,7 +60,7 @@ export default async function NewConversationPage({
             name="body"
             required
             rows={5}
-            placeholder="Contale por qué querés escribirle..."
+            placeholder="Cuéntale brevemente por qué quieres contactarlo..."
             className="field"
           />
           {searchParams.error === "mensaje_vacio" && (
