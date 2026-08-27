@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  EMPRENDEDOR
+  EMPLEABLE
+  INSTITUCION
+}
+
+enum Org {
+  EAFIT
+  ANDI
+}
+
+model Cohort {
+  id              String           @id @default(cuid())
+  name            String
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  users           User[]
+  invitationLinks InvitationLink[]
+  companies       Company[]
+  talentProfiles  TalentProfile[]
+}
+
+// Modelo de usuario compatible con el adapter de Prisma de Auth.js
+// (id, name, email, emailVerified, image son los campos que Auth.js espera),
+// extendido con los campos propios del programa (role, org, cohortId).
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  emailVerified DateTime?
+  image         String?
+  role          Role
+  org           Org?
+  cohortId      String
+  cohort        Cohort    @relation(fields: [cohortId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Consentimiento granular (Ley 1581 de 2012 y Decreto 1377 de 2013,
+  // Colombia — Habeas Data). Ambos obligatorios para crear la cuenta, ver
+  // SPEC-onboarding.md. null = nunca dio ese consentimiento.
+  consentDataProcessingAt DateTime?
+  consentDirectoryAt      DateTime?
+
+  accounts Account[]
+  sessions Session[]
+  company  Company?
+  talent   TalentProfile?
+
+  conversationsStarted  Conversation[] @relation("ConversationsStarted")
+  conversationsReceived Conversation[] @relation("ConversationsReceived")
+  messages              Message[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+// Sesiones en base de datos (no JWT): al eliminar un User, el onDelete: Cascade
+// borra también sus Session de inmediato — así una cuenta eliminada por el admin
+// pierde el acceso al instante, no cuando expire un token firmado.
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Fila única (id fijo = 1) que actúa como configuración global del sitio.
+model AppSettings {
+  id               Int     @id @default(1)
+  guestModeEnabled Boolean @default(false)
+}
+
+// Guarda el último link de acceso generado por correo, para que el admin lo
+// pueda copiar manualmente (T12) y para que los tests e2e prueben el flujo
+// real sin depender de un correo de verdad. Persistido en DB (no en memoria)
+// porque Next.js compila Server Actions y Route Handlers en capas separadas
+// con módulos distintos en dev, y en producción cada invocación serverless
+// puede caer en una instancia distinta — una variable en memoria no se
+// comparte de forma confiable entre esas dos llamadas.
+model LastLinkCache {
+  email     String   @id
+  url       String
+  createdAt DateTime @default(now())
+}
+
+model InvitationLink {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  cohortId  String
+  cohort    Cohort   @relation(fields: [cohortId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Company {
+  id       String @id @default(cuid())
+  ownerId  String @unique
+  owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  cohortId String
+  cohort   Cohort @relation(fields: [cohortId], references: [id])
+
+  name              String
+  tagline           String
+  sector            String?
+  logoUrl           String?
+  description       String
+  purpose           String?
+  values            String?
+  valueProp         String
+  founders          Json
+  website           String?
+  contactLink       String?
+  contactLinkPublic Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Estado laboral (isEmployed/isSeekingWork) solo se sirve al dueño o a admin
+// cuando employmentStatusVisible es false — la lógica vive en lib/talent.ts,
+// no basta con ocultarlo en el render.
+model TalentProfile {
+  id       String @id @default(cuid())
+  ownerId  String @unique
+  owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  cohortId String
+  cohort   Cohort @relation(fields: [cohortId], references: [id])
+
+  headline        String
+  postgraduates   String?
+  experienceAreas String
+  motivations     String?
+
+  isEmployed              Boolean?
+  isSeekingWork           Boolean?
+  employmentStatusVisible Boolean  @default(true)
+
+  linkedinUrl       String
+  contactLink       String?
+  contactLinkPublic Boolean @default(false)
+  photoUrl          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ConversationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+// Una sola conversación por par de personas (@@unique cubre el sentido en el
+// que se creó primero; el caso simétrico — la otra persona contacta primero
+// en el sentido inverso — se resuelve en lib/messaging.ts buscando en ambas
+// direcciones antes de crear, no con una segunda constraint). Ni admin ni
+// institución pueden leer el contenido de una conversación ajena en v1 — ver
+// SPEC-messaging.md — así que este modelo no expone ningún acceso especial
+// por rol, solo por ser initiator o recipient.
+model Conversation {
+  id          String             @id @default(cuid())
+  initiatorId String
+  initiator   User               @relation("ConversationsStarted", fields: [initiatorId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   User               @relation("ConversationsReceived", fields: [recipientId], references: [id], onDelete: Cascade)
+  status      ConversationStatus @default(PENDING)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  messages    Message[]
+
+  @@unique([initiatorId, recipientId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  createdAt      DateTime     @default(now())
+  readAt         DateTime?
+}

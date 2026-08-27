@@ -8,6 +8,8 @@
 
 # testing
 /coverage
+/test-results
+/playwright-report
 
 # next.js
 /.next/
@@ -26,6 +28,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
 
 # vercel
@@ -34,3 +37,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# material de diseño (afiches, recortes de logos) — no lo usa la app en
+# runtime, solo public/logos/ con las versiones finales
+/assets
+/Assets
+
+# claude code / herramientas locales
+.claude
+claude-local.bat
