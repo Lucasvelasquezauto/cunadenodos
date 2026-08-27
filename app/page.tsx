@@ -38,8 +38,11 @@ function CardOrLink({ href, children }: { href: string | null; children: React.R
 export default async function HomePage() {
   const session = await auth();
   const guestModeEnabled = session?.user ? false : await getGuestModeEnabled();
-  const empresasHref = session?.user ? "/empresas" : guestModeEnabled ? "/invitado/empresas" : null;
-  const talentoHref = session?.user ? "/talento" : guestModeEnabled ? "/invitado/talento" : null;
+  // Sin sesión, estas tarjetas se quedan sin link incluso con el modo
+  // invitado activo — el único punto de entrada a esa vista es el botón
+  // "Ver como invitado" de abajo, nunca un click directo desde acá.
+  const empresasHref = session?.user ? "/empresas" : null;
+  const talentoHref = session?.user ? "/talento" : null;
 
   return (
     <div className="min-h-screen">
