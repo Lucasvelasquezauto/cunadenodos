@@ -24,9 +24,22 @@ const STATS = [
 // modo invitado del admin — mismo motivo que en /invitado.
 export const dynamic = "force-dynamic";
 
+function CardOrLink({ href, children }: { href: string | null; children: React.ReactNode }) {
+  if (!href) {
+    return <div className="card">{children}</div>;
+  }
+  return (
+    <Link href={href} className="card text-left hover:border-primary">
+      {children}
+    </Link>
+  );
+}
+
 export default async function HomePage() {
   const session = await auth();
   const guestModeEnabled = session?.user ? false : await getGuestModeEnabled();
+  const empresasHref = session?.user ? "/empresas" : guestModeEnabled ? "/invitado/empresas" : null;
+  const talentoHref = session?.user ? "/talento" : guestModeEnabled ? "/invitado/talento" : null;
 
   return (
     <div className="min-h-screen">
@@ -83,20 +96,20 @@ export default async function HomePage() {
         </p>
 
         <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div className="card">
+          <CardOrLink href={empresasHref}>
             <h2>Ruta de emprendimiento</h2>
             <p className="mt-2 text-sm text-gray-600">
               Empresas ya registradas en Cámara de Comercio, listas para posicionarse, encontrar
               clientes y tejer alianzas dentro de la red del programa.
             </p>
-          </div>
-          <div className="card">
+          </CardOrLink>
+          <CardOrLink href={talentoHref}>
             <h2>Ruta de empleabilidad</h2>
             <p className="mt-2 text-sm text-gray-600">
               Talento formado en la Beca SER ANDI en búsqueda de empleo o proyectos, con perfil
               profesional visible para toda la red.
             </p>
-          </div>
+          </CardOrLink>
         </div>
       </main>
 
