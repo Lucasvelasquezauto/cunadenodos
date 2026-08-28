@@ -86,6 +86,8 @@ test.beforeAll(async () => {
         ownerId: receiver.id,
         cohortId,
         headline: "Perfil de prueba",
+        school: "Ingeniería",
+        experienceYears: 1,
         experienceAreas: "Área de prueba",
         linkedinUrl: "https://linkedin.com/in/e2e-msg-receiver",
       },

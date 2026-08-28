@@ -1,5 +1,6 @@
 import { PrismaClient, Role, Org, ConversationStatus } from "@prisma/client";
 import { hashPassword } from "../lib/passwords";
+import type { TalentSchool } from "../lib/talent";
 
 const prisma = new PrismaClient();
 
@@ -250,6 +251,8 @@ async function main() {
     email: string;
     name: string;
     headline: string;
+    school: TalentSchool;
+    experienceYears: number;
     postgraduates?: string;
     experienceAreas: string;
     motivations?: string;
@@ -266,6 +269,8 @@ async function main() {
       email: "empleable@demo.board",
       name: "Carlos Ruiz",
       headline: "Analista de datos",
+      school: "Ingeniería",
+      experienceYears: 4,
       postgraduates: "Especialización en Ciencia de Datos, Universidad EAFIT",
       experienceAreas: "Analítica de retail, dashboards en Power BI, modelos de demanda",
       motivations: "Busca un rol remoto o híbrido en analítica, idealmente en retail o consumo masivo.",
@@ -277,6 +282,8 @@ async function main() {
       email: "empleable2@demo.board",
       name: "Valentina Correa",
       headline: "Especialista en marketing digital",
+      school: "Comunicación",
+      experienceYears: 3,
       postgraduates: "Diplomado en Growth Marketing",
       experienceAreas: "Pauta en Meta e Instagram Ads, email marketing, SEO básico",
       motivations: "Le interesa marketing para marcas de consumo o e-commerce en crecimiento.",
@@ -289,6 +296,8 @@ async function main() {
       email: "empleable3@demo.board",
       name: "Santiago Ochoa",
       headline: "Ingeniero industrial, recién graduado",
+      school: "Ingeniería",
+      experienceYears: 0,
       experienceAreas: "Mejora de procesos, logística, prácticas en manufactura",
       motivations: "Su primer empleo formal — abierto a logística, operaciones o cadena de suministro.",
       isEmployed: false,
@@ -301,6 +310,8 @@ async function main() {
       email: "empleable4@demo.board",
       name: "Isabella Muñoz",
       headline: "Diseñadora UX/UI",
+      school: "Arquitectura y Diseño",
+      experienceYears: 5,
       postgraduates: "Maestría en Diseño de Experiencia de Usuario",
       experienceAreas: "Investigación de usuarios, prototipado en Figma, design systems",
       motivations: "Busca proyectos freelance mientras encuentra un rol de tiempo completo en producto.",
@@ -312,6 +323,8 @@ async function main() {
       email: "empleable5@demo.board",
       name: "Juan Pablo Zapata",
       headline: "Analista financiero",
+      school: "Economía y Finanzas",
+      experienceYears: 6,
       postgraduates: "Especialización en Finanzas Corporativas",
       experienceAreas: "Modelos financieros, presupuesto, análisis de inversión",
       motivations: "Interesado en banca de inversión o finanzas corporativas en empresas medianas.",
@@ -323,6 +336,8 @@ async function main() {
       email: "empleable6@demo.board",
       name: "Daniela Higuita",
       headline: "Desarrolladora backend (Node.js, Python)",
+      school: "Ingeniería",
+      experienceYears: 2,
       experienceAreas: "APIs REST, bases de datos relacionales, integración con pasarelas de pago",
       motivations: "Busca un equipo de producto donde pueda crecer técnicamente, remoto de preferencia.",
       isEmployed: false,
@@ -334,6 +349,8 @@ async function main() {
       email: "empleable7@demo.board",
       name: "Miguel Ángel Torres",
       headline: "Profesional en Gestión Humana",
+      school: "Administración",
+      experienceYears: 8,
       postgraduates: "Especialización en Gerencia del Talento Humano",
       experienceAreas: "Selección, formación, clima organizacional",
       motivations: "Le interesa liderar procesos de talento en empresas en crecimiento acelerado.",
@@ -346,6 +363,8 @@ async function main() {
       email: "empleable8@demo.board",
       name: "Paula Andrea Restrepo",
       headline: "Ingeniera civil, gestión de proyectos",
+      school: "Ingeniería",
+      experienceYears: 10,
       postgraduates: "PMP en curso",
       experienceAreas: "Interventoría de obra, cronogramas, control de costos",
       motivations: "Busca dar el salto a un rol de coordinación de proyectos, no solo obra.",
@@ -357,6 +376,8 @@ async function main() {
       email: "empleable9@demo.board",
       name: "Tomás Vélez",
       headline: "Community manager bilingüe (español/inglés)",
+      school: "Comunicación",
+      experienceYears: 1,
       experienceAreas: "Redes sociales, redacción de contenido, atención al cliente en redes",
       motivations: "Abierto a trabajo remoto para marcas internacionales o agencias.",
       isEmployed: false,
@@ -384,11 +405,18 @@ async function main() {
     }
     await prisma.talentProfile.upsert({
       where: { ownerId: userIds[t.email] },
-      update: {},
+      // A diferencia del resto del registro (sin tocar, por si la persona ya
+      // lo editó desde /perfil), experienceYears/school son campos nuevos que
+      // nadie pudo haber editado todavía — se actualizan igual en un re-seed
+      // para que las filas ya creadas antes de esta migración dejen de tener
+      // el valor de relleno (0 / "Otra") de la migración.
+      update: { experienceYears: t.experienceYears, school: t.school },
       create: {
         ownerId: userIds[t.email],
         cohortId: cohort.id,
         headline: t.headline,
+        school: t.school,
+        experienceYears: t.experienceYears,
         postgraduates: t.postgraduates,
         experienceAreas: t.experienceAreas,
         motivations: t.motivations,

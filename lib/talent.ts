@@ -1,4 +1,4 @@
-import { Role, type TalentProfile } from "@prisma/client";
+import { Prisma, Role, type TalentProfile } from "@prisma/client";
 
 type ProfileCompletenessFields = Pick<
   TalentProfile,
@@ -11,6 +11,67 @@ export function isProfileComplete(profile: ProfileCompletenessFields): boolean {
       profile.experienceAreas?.trim() &&
       profile.linkedinUrl?.trim(),
   );
+}
+
+// Lista cerrada para que el select de /perfil y el filtro de /talento usen
+// exactamente los mismos valores — sin enum de Prisma porque EAFIT puede
+// querer ajustar esta lista sin que cada cambio implique una migración.
+export const TALENT_SCHOOLS = [
+  "Ingeniería",
+  "Economía y Finanzas",
+  "Administración",
+  "Derecho",
+  "Ciencias",
+  "Humanidades",
+  "Arquitectura y Diseño",
+  "Comunicación",
+  "Otra",
+] as const;
+
+export type TalentSchool = (typeof TALENT_SCHOOLS)[number];
+
+export function isTalentSchool(value: string): value is TalentSchool {
+  return (TALENT_SCHOOLS as readonly string[]).includes(value);
+}
+
+// Límite generoso para una hoja de vida en PDF sin abrir la puerta a subir
+// cualquier cosa a la base de datos (se guarda como bytes, ver schema.prisma).
+export const MAX_CV_SIZE_BYTES = 5 * 1024 * 1024;
+
+export function isValidCvFile(file: File): boolean {
+  const looksLikePdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  return looksLikePdf && file.size > 0 && file.size <= MAX_CV_SIZE_BYTES;
+}
+
+export type TalentFilters = {
+  school?: string;
+  minExperience?: number;
+  q?: string;
+};
+
+// Compartido entre /talento y /invitado/talento — misma lógica de filtro para
+// cualquiera que navegue el directorio, con o sin cuenta.
+export function buildTalentWhere(filters: TalentFilters): Prisma.TalentProfileWhereInput {
+  const where: Prisma.TalentProfileWhereInput = {};
+
+  if (filters.school && isTalentSchool(filters.school)) {
+    where.school = filters.school;
+  }
+
+  if (filters.minExperience !== undefined && !Number.isNaN(filters.minExperience)) {
+    where.experienceYears = { gte: filters.minExperience };
+  }
+
+  const q = filters.q?.trim();
+  if (q) {
+    where.OR = [
+      { headline: { contains: q, mode: "insensitive" } },
+      { experienceAreas: { contains: q, mode: "insensitive" } },
+      { motivations: { contains: q, mode: "insensitive" } },
+    ];
+  }
+
+  return where;
 }
 
 type Viewer = { id: string; role: Role } | null | undefined;

@@ -172,6 +172,8 @@ model TalentProfile {
   postgraduates   String?
   experienceAreas String
   motivations     String?
+  experienceYears Int
+  school          String
 
   isEmployed              Boolean?
   isSeekingWork           Boolean?
@@ -181,6 +183,15 @@ model TalentProfile {
   contactLink       String?
   contactLinkPublic Boolean @default(false)
   photoUrl          String?
+
+  // Hoja de vida (PDF), guardada como bytes en la misma fila — sin
+  // integración de storage externo (decisión 2026-08-27, ver
+  // SPEC-directory-talent.md). Los 4 campos van juntos: null significa que
+  // nunca se subió nada.
+  cvFileName   String?
+  cvMimeType   String?
+  cvFile       Bytes?
+  cvUploadedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

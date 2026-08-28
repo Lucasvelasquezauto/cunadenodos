@@ -16,7 +16,7 @@ test("el toggle de modo invitado controla el acceso a /invitado", async ({ page 
   await expect(page.getByText("Activo", { exact: true })).toBeVisible();
 
   await page.goto("/invitado");
-  await expect(page.getByRole("heading", { name: "Board SER ANDI — vista de invitado" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cuna de Nodos — vista de invitado" })).toBeVisible();
 
   // Apagar de nuevo para no dejar el estado prendido entre corridas.
   await page.goto("/admin/settings");

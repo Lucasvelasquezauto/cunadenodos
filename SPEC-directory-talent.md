@@ -107,3 +107,39 @@ de arquitectura).
 1. Confirmado por el usuario: sin subida real de foto, sin panel admin dedicado
    para editar el perfil de otro (solo borrar la cuenta, que borra el perfil en cascada). ¿De
    acuerdo para v1?
+
+## Adiciones 2026-08-27: hoja de vida, años de experiencia, filtros
+
+Pedido por el usuario tras la demo con EAFIT. Tres piezas, todas sobre el mismo modelo:
+
+1. **Hoja de vida (PDF)**: campos nuevos en `TalentProfile` — `cvFileName`, `cvMimeType`,
+   `cvFile` (`Bytes`), `cvUploadedAt`, todos opcionales. El archivo se guarda como bytes en la
+   misma fila de Postgres (decisión del usuario: sin Vercel Blob ni Supabase Storage, para no
+   añadir infraestructura/variables de entorno nuevas antes del lanzamiento — límite 5MB,
+   `MAX_CV_SIZE_BYTES` en `lib/talent.ts`). Se sube/reemplaza/elimina desde `/perfil`
+   (`app/(app)/perfil/actions.ts`: `saveMyProfile` solo toca los 4 campos si llega un archivo
+   nuevo; `deleteMyCv` los limpia). Se descarga vía rutas dedicadas —
+   `app/(app)/talento/[id]/cv/route.ts` (con sesión) y `app/invitado/talento/[id]/cv/route.ts`
+   (invitado) — porque un `route.ts` no hereda el `layout.tsx` de su grupo, así que cada una repite
+   su propio chequeo de acceso. **Visible a cualquiera que vea el perfil, invitados incluidos** —
+   pedido explícito del usuario ("emprendedores, instituciones o invitados"), consistente con el
+   consentimiento (b) ya firmado en el onboarding (cubre "los demás datos que decida compartir",
+   ferias incluidas) — sin checkbox de opt-in aparte, a diferencia de `contactLinkPublic`.
+2. **Años de experiencia**: campo nuevo `experienceYears` (`Int`, requerido) — se pregunta en
+   `/perfil` junto a `school`, aparece en la lista de `/talento` y en el detalle.
+3. **Escuela de formación**: campo nuevo `school` (`String`, requerido) — lista cerrada en
+   `TALENT_SCHOOLS` (`lib/talent.ts`: Ingeniería, Economía y Finanzas, Administración, Derecho,
+   Ciencias, Humanidades, Arquitectura y Diseño, Comunicación, Otra). Es un `String` validado en
+   código, no un enum de Prisma, para que EAFIT pueda ajustar la lista sin migración.
+4. **Filtro básico en `/talento`** (y su espejo `/invitado/talento`): por escuela, por años de
+   experiencia mínimos, y búsqueda de texto libre sobre profesión/áreas de experiencia/
+   motivaciones. Implementado con `<form method="get">` + `searchParams` (sin JS), lógica
+   compartida en `buildTalentWhere()` (`lib/talent.ts`) para no duplicarla entre las dos páginas.
+   **A propósito fuera de este filtro**: estado laboral (`isEmployed`/`isSeekingWork`) — filtrar
+   por eso requeriría decidir cómo tratar los perfiles con `employmentStatusVisible: false` dentro
+   de un filtro público, y no se resolvió esa pregunta; queda como candidato a v2 si EAFIT lo pide.
+
+Migración: `20260827230000_add_experience_school_cv` — `experienceYears`/`school` se agregaron
+con un `DEFAULT` temporal (0 / "Otra") para no romper las filas de seed ya existentes, y luego se
+quitó el default; el seed se corrió de nuevo para reemplazar esos valores de relleno por los
+datos ficticios reales de cada perfil.

@@ -27,6 +27,10 @@ export default async function GuestTalentDetailPage({
         <div>
           <h1 className="text-2xl font-semibold">{profile.owner.name}</h1>
           <p className="text-base text-gray-600">{profile.headline}</p>
+          <p className="text-sm text-gray-500">
+            {profile.school} · {profile.experienceYears}{" "}
+            {profile.experienceYears === 1 ? "año" : "años"} de experiencia
+          </p>
         </div>
       </div>
 
@@ -71,6 +75,11 @@ export default async function GuestTalentDetailPage({
           >
             LinkedIn
           </a>
+          {profile.cvFileName && (
+            <a href={`/invitado/talento/${record.id}/cv`} className="btn-secondary">
+              Descargar hoja de vida
+            </a>
+          )}
           {profile.contactLinkPublic && profile.contactLink && (
             <a
               href={profile.contactLink}

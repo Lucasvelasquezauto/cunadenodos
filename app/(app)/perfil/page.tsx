@@ -2,10 +2,12 @@ import { redirect } from "next/navigation";
 import { Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { saveMyProfile } from "./actions";
+import { TALENT_SCHOOLS } from "@/lib/talent";
+import { saveMyProfile, deleteMyCv } from "./actions";
 
 const ERROR_MESSAGES: Record<string, string> = {
-  faltan_campos: "Profesión, áreas de experiencia y LinkedIn son obligatorios.",
+  faltan_campos: "Profesión, escuela, años de experiencia, áreas de experiencia y LinkedIn son obligatorios.",
+  cv_invalido: "La hoja de vida debe ser un PDF de máximo 5 MB.",
 };
 
 function boolToValue(value: boolean | null | undefined): string {
@@ -53,6 +55,34 @@ export default async function MyProfilePage({
         <div>
           <label htmlFor="headline">Profesión / rol</label>
           <input id="headline" name="headline" required defaultValue={profile?.headline} className="field mt-1 w-full" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="school">Escuela de formación</label>
+            <select id="school" name="school" required defaultValue={profile?.school ?? ""} className="field mt-1 w-full">
+              <option value="" disabled>
+                Selecciona una escuela
+              </option>
+              {TALENT_SCHOOLS.map((school) => (
+                <option key={school} value={school}>
+                  {school}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="experienceYears">Años de experiencia</label>
+            <input
+              id="experienceYears"
+              name="experienceYears"
+              type="number"
+              min={0}
+              max={60}
+              required
+              defaultValue={profile?.experienceYears ?? ""}
+              className="field mt-1 w-full"
+            />
+          </div>
         </div>
         <div>
           <label htmlFor="postgraduates">Posgrados (opcional)</label>
@@ -118,10 +148,38 @@ export default async function MyProfilePage({
           Mostrar este link incluso a invitados no registrados
         </label>
 
+        <fieldset className="flex flex-col gap-2 rounded-lg border border-gray-200 p-4">
+          <legend className="px-1 text-sm font-medium text-ink">Hoja de vida (PDF, opcional)</legend>
+          {profile?.cvFileName ? (
+            <p className="text-sm text-gray-600">
+              Ya subiste{" "}
+              <a href={`/talento/${profile.id}/cv`} className="font-medium text-primary hover:underline">
+                {profile.cvFileName}
+              </a>
+              . Sube otro archivo abajo para reemplazarla.
+            </p>
+          ) : (
+            <p className="text-sm text-gray-600">
+              Cualquiera que entre al directorio (empresas, instituciones e invitados) podrá
+              descargarla desde tu perfil.
+            </p>
+          )}
+          <input id="cv" name="cv" type="file" accept="application/pdf" className="field mt-1 w-full" />
+          <p className="text-xs text-gray-500">Máximo 5 MB.</p>
+        </fieldset>
+
         <button type="submit" className="btn-primary self-start">
           Guardar
         </button>
       </form>
+
+      {profile?.cvFileName && (
+        <form action={deleteMyCv} className="mt-3">
+          <button type="submit" className="text-sm text-error hover:underline">
+            Eliminar hoja de vida
+          </button>
+        </form>
+      )}
     </main>
   );
 }

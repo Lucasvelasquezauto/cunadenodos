@@ -111,6 +111,8 @@ test("el banner de perfil incompleto aparece hasta completar el perfil", async (
 
   await page.goto("/perfil");
   await page.fill("#headline", "Perfil de prueba");
+  await page.selectOption("#school", "Ingeniería");
+  await page.fill("#experienceYears", "2");
   await page.fill("#experienceAreas", "Área de prueba");
   await page.fill("#linkedinUrl", "https://linkedin.com/in/e2e-invite-banner");
   await page.getByRole("button", { name: "Guardar" }).click();
