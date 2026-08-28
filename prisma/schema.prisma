@@ -106,8 +106,10 @@ model VerificationToken {
 
 // Fila única (id fijo = 1) que actúa como configuración global del sitio.
 model AppSettings {
-  id               Int     @id @default(1)
-  guestModeEnabled Boolean @default(false)
+  id                    Int       @id @default(1)
+  guestModeEnabled      Boolean   @default(false)
+  guestModeChangedBy    String?
+  guestModeChangedAt    DateTime?
 }
 
 // Token de un solo uso para fijar o restablecer contraseña. El admin lo
