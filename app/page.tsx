@@ -61,7 +61,7 @@ export default async function HomePage() {
             CUNA DE NODOS
           </h1>
           <p className="mx-auto mt-2 max-w-xl text-lg font-semibold text-primary">
-            Plataforma de co-incubación de la Beca SER ANDI
+            Fruto de la formación en la Beca SER ANDI
           </p>
           <p className="mx-auto mt-4 max-w-xl text-base text-gray-600">
             Un espacio de contacto entre los emprendimientos y el talento formado en la Beca SER
