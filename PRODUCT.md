@@ -4,6 +4,14 @@
 
 product
 
+## Hosting & Production
+
+El sitio es un desarrollo independiente de un egresado del programa, alojado y producido fuera
+de EAFIT y la ANDI. Los usuarios de EAFIT/ANDI (rol Institución) siguen existiendo con todos sus
+permisos; no hay logos ni menciones de EAFIT/ANDI como productores del sitio, aunque sí siguen
+viendo la información del directorio conforme al consentimiento de datos que ya firmaron los
+participantes.
+
 ## Users
 
 ~100 participantes de un programa de formación EAFIT + ANDI, divididos en dos rutas:
@@ -33,8 +41,8 @@ contactos hechos), no solo perfiles completos.
 ## Brand Personality
 
 Elegante, fresco, confiable. Profesional sin ser frío; joven sin ser infantil. La marca transmite
-que este es un espacio serio respaldado por una universidad y un gremio empresarial, pero hecho
-para gente que está empezando su carrera o su empresa — no un portal corporativo de recursos
+que este es un espacio serio, nacido de la formación de un programa universitario y gremial, pero
+hecho para gente que está empezando su carrera o su empresa — no un portal corporativo de recursos
 humanos de los 2000.
 
 ## Anti-references
@@ -47,8 +55,9 @@ humanos de los 2000.
 
 1. **Claridad ante todo.** Con 100 usuarios de nivel técnico muy variado, cada pantalla se explica
    sola — sin depender de que alguien lea instrucciones externas.
-2. **La identidad institucional se siente, no se grita.** EAFIT y ANDI dan confianza de fondo; no
-   hace falta un logo gigante en cada esquina para transmitirla.
+2. **La procedencia del proyecto se siente, no se grita.** La formación de EAFIT y ANDI da
+   confianza de fondo, pero el sitio no lleva sus logos ni se presenta como producto suyo — la
+   sección "Acerca de" y el pie de página bastan para explicarlo.
 3. **Cada pantalla empuja hacia una acción concreta** (contactar, aplicar, completar el perfil) —
    nada de decoración sin propósito.
 4. **Ligero y rápido.** Buena parte del uso es desde celular, en conexiones no siempre ideales.

@@ -33,7 +33,7 @@ export default async function AdminLayout({
         <div className="mx-auto flex max-w-4xl items-center gap-6 text-sm">
           <Link href="/" aria-label="Ir al sitio">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logos/beca-ser-andi.png" alt="Beca SER ANDI" className="h-6 w-auto" />
+            <img src="/logo-cuna-de-nodos.png" alt="Cuna de Nodos" className="h-6 w-auto" />
           </Link>
           <ul className="flex items-center gap-4">
             {NAV_LINKS.map((link) => (

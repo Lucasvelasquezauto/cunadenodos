@@ -13,7 +13,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 // Cifras del programa, no de uso de la plataforma (que arranca en cero) —
-// indicativas hasta que EAFIT confirme los datos reales. Ver CAPABILITY-MAP.md.
+// indicativas hasta contar con los datos reales. Ver CAPABILITY-MAP.md.
 const STATS = [
   { value: "+100", label: "personas formadas en la Beca SER ANDI" },
   { value: "30", label: "empresas en ruta de emprendimiento" },
@@ -53,8 +53,8 @@ export default async function HomePage() {
         <div className="text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logos/beca-ser-andi.png"
-            alt="Beca SER ANDI — Inteligencia Artificial"
+            src="/logo-cuna-de-nodos.png"
+            alt="Cuna de Nodos"
             className="mx-auto h-14 w-auto sm:h-16"
           />
           <h1 className="mx-auto mt-6 max-w-2xl text-3xl font-extrabold sm:text-4xl">
@@ -65,7 +65,7 @@ export default async function HomePage() {
           </p>
           <p className="mx-auto mt-4 max-w-xl text-base text-gray-600">
             Un espacio de contacto entre los emprendimientos y el talento formado en la Beca SER
-            ANDI — Inteligencia Artificial, operado por Universidad EAFIT y NODO.
+            ANDI — Inteligencia Artificial.
           </p>
 
           {session?.user ? (
@@ -97,7 +97,7 @@ export default async function HomePage() {
           ))}
         </div>
         <p className="mt-3 text-center text-xs text-gray-500 sm:text-left">
-          Cifras del programa, indicativas hasta que EAFIT confirme los datos definitivos.
+          Cifras del programa, indicativas hasta contar con los datos definitivos.
         </p>
 
         <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2">

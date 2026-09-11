@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Board SER ANDI",
+  title: "Cuna de Nodos",
   description: "Red de contacto entre emprendedores y talento de la Beca SER ANDI.",
 };
 
