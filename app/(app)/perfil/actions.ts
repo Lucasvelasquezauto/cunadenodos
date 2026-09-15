@@ -25,6 +25,7 @@ export async function saveMyProfile(formData: FormData) {
     redirect("/");
   }
 
+  const name = str(formData, "name");
   const headline = str(formData, "headline");
   const experienceAreas = str(formData, "experienceAreas");
   const linkedinUrl = str(formData, "linkedinUrl");
@@ -32,6 +33,7 @@ export async function saveMyProfile(formData: FormData) {
   const experienceYearsRaw = str(formData, "experienceYears");
   const experienceYears = Number(experienceYearsRaw);
   if (
+    !name ||
     !headline ||
     !experienceAreas ||
     !linkedinUrl ||
@@ -84,11 +86,14 @@ export async function saveMyProfile(formData: FormData) {
     ...cvData,
   };
 
-  await prisma.talentProfile.upsert({
-    where: { ownerId: session.user.id },
-    update: data,
-    create: { ...data, ownerId: session.user.id, cohortId: session.user.cohortId },
-  });
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: session.user.id }, data: { name } }),
+    prisma.talentProfile.upsert({
+      where: { ownerId: session.user.id },
+      update: data,
+      create: { ...data, ownerId: session.user.id, cohortId: session.user.cohortId },
+    }),
+  ]);
 
   revalidatePath("/perfil");
   revalidatePath("/talento");

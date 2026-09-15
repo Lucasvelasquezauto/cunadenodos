@@ -6,7 +6,7 @@ import { TALENT_SCHOOLS } from "@/lib/talent";
 import { saveMyProfile, deleteMyCv } from "./actions";
 
 const ERROR_MESSAGES: Record<string, string> = {
-  faltan_campos: "Profesión, escuela, años de experiencia, áreas de experiencia y LinkedIn son obligatorios.",
+  faltan_campos: "Nombre, profesión, escuela, años de experiencia, áreas de experiencia y LinkedIn son obligatorios.",
   cv_invalido: "La hoja de vida debe ser un PDF de máximo 5 MB.",
 };
 
@@ -52,6 +52,10 @@ export default async function MyProfilePage({
       )}
 
       <form action={saveMyProfile} className="mt-6 flex flex-col gap-4">
+        <div>
+          <label htmlFor="name">Nombre completo</label>
+          <input id="name" name="name" required defaultValue={session.user.name ?? ""} className="field mt-1 w-full" />
+        </div>
         <div>
           <label htmlFor="headline">Profesión / rol</label>
           <input id="headline" name="headline" required defaultValue={profile?.headline} className="field mt-1 w-full" />

@@ -25,7 +25,7 @@ export default async function GuestTalentDetailPage({
       <div className="flex items-center gap-4">
         <Avatar name={profile.owner.name ?? profile.headline} imageUrl={profile.photoUrl} size="lg" />
         <div>
-          <h1 className="text-2xl font-semibold">{profile.owner.name}</h1>
+          <h1 className="text-2xl font-semibold">{profile.owner.name ?? profile.headline}</h1>
           <p className="text-base text-gray-600">{profile.headline}</p>
           <p className="text-sm text-gray-500">
             {profile.school} · {profile.experienceYears}{" "}

@@ -41,7 +41,7 @@ export default async function TalentPage({
             >
               <Avatar name={profile.owner.name ?? profile.headline} imageUrl={profile.photoUrl} />
               <div>
-                <p className="font-medium text-ink">{profile.owner.name}</p>
+                <p className="font-medium text-ink">{profile.owner.name ?? profile.headline}</p>
                 <p className="text-sm text-gray-600">{profile.headline}</p>
                 <p className="mt-1 text-xs text-gray-500">
                   {profile.school} · {profile.experienceYears}{" "}

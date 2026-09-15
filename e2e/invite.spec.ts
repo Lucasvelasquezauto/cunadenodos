@@ -57,6 +57,7 @@ test("un token de invitación inexistente muestra un mensaje claro", async ({ pa
 
 test("un token válido crea la cuenta con la ruta elegida, contraseña y consentimiento, y entra directo", async ({ page }) => {
   await page.goto(`/invite/${validToken}`);
+  await page.fill('input[name="name"]', "Persona de prueba");
   await page.fill('input[name="email"]', TEST_EMAIL);
   await page.fill('input[name="password"]', TEST_PASSWORD);
   await page.fill('input[name="confirmPassword"]', TEST_PASSWORD);
@@ -68,6 +69,7 @@ test("un token válido crea la cuenta con la ruta elegida, contraseña y consent
   await expect(page).toHaveURL("/", { timeout: 15_000 });
 
   const user = await prisma.user.findUnique({ where: { email: TEST_EMAIL } });
+  expect(user?.name).toBe("Persona de prueba");
   expect(user?.role).toBe("EMPLEABLE");
   expect(user?.passwordHash).not.toBeNull();
   expect(user?.consentDataProcessingAt).not.toBeNull();
@@ -76,6 +78,7 @@ test("un token válido crea la cuenta con la ruta elegida, contraseña y consent
 
 test("sin marcar los consentimientos, el servidor rechaza aunque se salte la validación del navegador", async ({ page }) => {
   await page.goto(`/invite/${validToken}`);
+  await page.fill('input[name="name"]', "Persona de prueba");
   await page.fill('input[name="email"]', TEST_EMAIL_NO_CONSENT);
   await page.fill('input[name="password"]', TEST_PASSWORD);
   await page.fill('input[name="confirmPassword"]', TEST_PASSWORD);
@@ -98,6 +101,7 @@ test("sin marcar los consentimientos, el servidor rechaza aunque se salte la val
 
 test("el banner de perfil incompleto aparece hasta completar el perfil", async ({ page }) => {
   await page.goto(`/invite/${validToken}`);
+  await page.fill('input[name="name"]', "Persona de prueba");
   await page.fill('input[name="email"]', TEST_EMAIL_BANNER);
   await page.fill('input[name="password"]', TEST_PASSWORD);
   await page.fill('input[name="confirmPassword"]', TEST_PASSWORD);

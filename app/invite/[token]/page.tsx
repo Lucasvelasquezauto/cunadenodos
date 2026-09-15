@@ -2,6 +2,7 @@ import { validateInvitationToken } from "@/lib/invitations";
 import { joinWithInvitation } from "./actions";
 
 const ERROR_MESSAGES: Record<string, string> = {
+  missing_name: "Escribe tu nombre completo.",
   missing_email: "Escribe un correo válido.",
   missing_track: "Selecciona tu ruta (emprendimiento o empleabilidad).",
   missing_consent: "Debes aceptar los dos consentimientos para crear tu cuenta.",
@@ -53,6 +54,13 @@ export default async function InvitePage({
       )}
 
       <form action={joinWithInvitation.bind(null, params.token)} className="flex flex-col gap-4">
+        <input
+          type="text"
+          name="name"
+          required
+          placeholder="Nombre completo"
+          className="field"
+        />
         <input
           type="email"
           name="email"

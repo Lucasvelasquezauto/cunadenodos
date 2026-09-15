@@ -10,6 +10,11 @@ import { hashPassword } from "@/lib/passwords";
 const MIN_PASSWORD_LENGTH = 8;
 
 export async function joinWithInvitation(token: string, formData: FormData) {
+  const name = formData.get("name");
+  if (typeof name !== "string" || name.trim().length === 0) {
+    redirect(`/invite/${token}?error=missing_name`);
+  }
+
   const email = formData.get("email");
   if (typeof email !== "string" || email.length === 0) {
     redirect(`/invite/${token}?error=missing_email`);
@@ -55,6 +60,7 @@ export async function joinWithInvitation(token: string, formData: FormData) {
   const passwordHash = await hashPassword(password);
   await prisma.user.create({
     data: {
+      name: name.trim(),
       email,
       role: track,
       cohortId: validation.cohortId,
