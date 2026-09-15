@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Role } from "@prisma/client";
 import { signOutAction } from "@/app/actions";
 import { getUnreadCount } from "@/lib/messaging";
+import { ChangePasswordButton } from "@/components/ChangePasswordButton";
 
 export async function AppNav({ role, userId }: { role: Role; userId: string }) {
   const unreadCount = await getUnreadCount(userId);
@@ -52,14 +53,17 @@ export async function AppNav({ role, userId }: { role: Role; userId: string }) {
             </Link>
           </li>
         </ul>
-        <form action={signOutAction} className="ml-auto">
-          <button
-            type="submit"
-            className="text-gray-500 hover:text-primary hover:underline"
-          >
-            Cerrar sesión
-          </button>
-        </form>
+        <div className="ml-auto flex items-center gap-4">
+          <ChangePasswordButton />
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="text-gray-500 hover:text-primary hover:underline"
+            >
+              Cerrar sesión
+            </button>
+          </form>
+        </div>
       </div>
     </nav>
   );

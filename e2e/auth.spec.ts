@@ -48,3 +48,34 @@ test("una contraseña incorrecta para un correo real es rechazada", async ({ pag
   await expect(page.getByTestId("login-error")).toContainText("Usuario o contraseña incorrectos");
   await expect(page).toHaveURL(/\/login/);
 });
+
+test("cualquier usuario logueado puede cambiar su propia contraseña desde la barra de navegación", async ({
+  page,
+}) => {
+  const NEW_PASSWORD = "MiNuevaClave123!";
+  await loginAs(page, E2E_EMPRENDEDOR, TEST_PASSWORD);
+
+  await page.getByRole("button", { name: "Cambiar contraseña" }).click();
+  const dialog = page.locator("dialog");
+  await expect(dialog).toBeVisible();
+
+  const linkInput = dialog.locator("input[readonly]");
+  await expect(linkInput).toBeVisible({ timeout: 10_000 });
+  const resetLink = await linkInput.inputValue();
+  expect(resetLink).toContain("/reset-password/");
+
+  await dialog.getByRole("button", { name: "Cerrar" }).click();
+  await expect(dialog).toBeHidden();
+
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page).toHaveURL("/");
+
+  await page.goto(resetLink);
+  await page.fill('input[name="password"]', NEW_PASSWORD);
+  await page.fill('input[name="confirmPassword"]', NEW_PASSWORD);
+  await page.getByRole("button", { name: "Guardar contraseña" }).click();
+  await expect(page).toHaveURL("/login");
+
+  await loginAs(page, E2E_EMPRENDEDOR, NEW_PASSWORD);
+  await expect(page).toHaveURL("/");
+});

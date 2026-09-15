@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { Org, Role } from "@prisma/client";
+import { auth } from "@/lib/auth";
+import { hasRole } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/passwords";
 
@@ -10,6 +12,9 @@ const VALID_ORGS = [Org.EAFIT, Org.ANDI];
 const MIN_PASSWORD_LENGTH = 8;
 
 export async function createUser(formData: FormData) {
+  const session = await auth();
+  if (!hasRole(session?.user, Role.ADMIN)) return;
+
   const email = formData.get("email");
   const password = formData.get("password");
   const roleValue = formData.get("role");
@@ -35,6 +40,9 @@ export async function createUser(formData: FormData) {
 }
 
 export async function deleteUser(userId: string) {
+  const session = await auth();
+  if (!hasRole(session?.user, Role.ADMIN)) return;
+
   await prisma.user.delete({ where: { id: userId } });
   revalidatePath("/admin/users");
 }

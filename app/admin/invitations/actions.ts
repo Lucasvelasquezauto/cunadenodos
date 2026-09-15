@@ -1,22 +1,25 @@
 "use server";
 
-import { headers } from "next/headers";
+import { Role } from "@prisma/client";
+import { auth } from "@/lib/auth";
+import { hasRole } from "@/lib/permissions";
+import { siteUrl } from "@/lib/site-url";
 import { createInvitationLink } from "@/lib/invitations";
 import { createPasswordResetToken } from "@/lib/passwords";
 import { prisma } from "@/lib/db";
 
-function siteUrl(path: string): string {
-  const host = headers().get("host");
-  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-  return `${protocol}://${host}${path}`;
-}
+export async function generateInvitationLink(cohortId: string): Promise<string | null> {
+  const session = await auth();
+  if (!hasRole(session?.user, Role.ADMIN)) return null;
 
-export async function generateInvitationLink(cohortId: string): Promise<string> {
   const invitation = await createInvitationLink(cohortId);
   return siteUrl(`/invite/${invitation.token}`);
 }
 
 export async function generatePasswordResetLink(userId: string): Promise<string | null> {
+  const session = await auth();
+  if (!hasRole(session?.user, Role.ADMIN)) return null;
+
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return null;
   const resetToken = await createPasswordResetToken(userId);
