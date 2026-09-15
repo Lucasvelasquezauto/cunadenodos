@@ -26,9 +26,10 @@ export default async function MyProfilePage({
     redirect("/");
   }
 
-  const profile = await prisma.talentProfile.findUnique({
-    where: { ownerId: session.user.id },
-  });
+  const [user, profile] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session.user.id } }),
+    prisma.talentProfile.findUnique({ where: { ownerId: session.user.id } }),
+  ]);
 
   const errorMessage = searchParams.error ? ERROR_MESSAGES[searchParams.error] : null;
 
@@ -54,7 +55,7 @@ export default async function MyProfilePage({
       <form action={saveMyProfile} className="mt-6 flex flex-col gap-4">
         <div>
           <label htmlFor="name">Nombre completo</label>
-          <input id="name" name="name" required defaultValue={session.user.name ?? ""} className="field mt-1 w-full" />
+          <input id="name" name="name" required defaultValue={user?.name ?? ""} className="field mt-1 w-full" />
         </div>
         <div>
           <label htmlFor="headline">Profesión / rol</label>
