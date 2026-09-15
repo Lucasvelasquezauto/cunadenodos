@@ -1,7 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { prisma } from "../lib/db";
-import { loginAs, TEST_PASSWORD, testPasswordHash, withDbRetry } from "./helpers";
+import { loginAs, TEST_PASSWORD, testPasswordHash, upsertTestUser, withDbRetry } from "./helpers";
 
+const E2E_ADMIN = "e2e-msg-admin@ejemplo.com";
 const E2E_SENDER = "e2e-msg-sender@ejemplo.com";
 const E2E_RECEIVER = "e2e-msg-receiver@ejemplo.com";
 const E2E_DECLINER = "e2e-msg-decliner@ejemplo.com";
@@ -17,6 +18,8 @@ test.beforeAll(async () => {
     if (!cohort) throw new Error("No hay cohorte activa — corre el seed primero.");
     const cohortId = cohort.id;
     const passwordHash = await testPasswordHash();
+
+    await upsertTestUser({ email: E2E_ADMIN, name: "Admin E2E", role: "ADMIN", cohortId });
 
     const sender = await prisma.user.upsert({
       where: { email: E2E_SENDER },
@@ -111,7 +114,9 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   await prisma.user.deleteMany({
     where: {
-      email: { in: [E2E_SENDER, E2E_RECEIVER, E2E_DECLINER, E2E_ISOLATION_A, E2E_ISOLATION_B] },
+      email: {
+        in: [E2E_ADMIN, E2E_SENDER, E2E_RECEIVER, E2E_DECLINER, E2E_ISOLATION_A, E2E_ISOLATION_B],
+      },
     },
   });
   await prisma.$disconnect();
@@ -197,7 +202,7 @@ test("un tercero (incluido admin) no puede abrir la conversación de otros", asy
     },
   });
 
-  await loginAs(page, "admin@demo.board", TEST_PASSWORD);
+  await loginAs(page, E2E_ADMIN, TEST_PASSWORD);
   await page.goto(`/mensajes/${conversation.id}`);
 
   await expect(page.getByText(secretBody)).not.toBeVisible();

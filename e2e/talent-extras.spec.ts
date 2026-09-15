@@ -1,8 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { prisma } from "../lib/db";
-import { loginAs, TEST_PASSWORD, testPasswordHash, withDbRetry } from "./helpers";
+import { getActiveCohortId, loginAs, TEST_PASSWORD, testPasswordHash, upsertTestUser, withDbRetry } from "./helpers";
 
+const E2E_ADMIN = "e2e-talent-extras-admin@ejemplo.com";
 const E2E_EMPLEABLE = "e2e-empleable-cv@ejemplo.com";
+const E2E_FILTRO_ING = "e2e-filtro-ingenieria@ejemplo.com";
+const E2E_FILTRO_COM = "e2e-filtro-comunicacion@ejemplo.com";
+const E2E_FILTRO_SENIOR = "e2e-filtro-senior@ejemplo.com";
 let cohortId: string;
 
 test.beforeAll(async () => {
@@ -23,24 +27,97 @@ test.beforeAll(async () => {
       },
     });
   });
+
+  await upsertTestUser({ email: E2E_ADMIN, name: "Admin E2E", role: "ADMIN", cohortId });
+
+  const ing = await upsertTestUser({
+    email: E2E_FILTRO_ING,
+    name: "Filtro Ingeniería E2E",
+    role: "EMPLEABLE",
+    cohortId,
+  });
+  const com = await upsertTestUser({
+    email: E2E_FILTRO_COM,
+    name: "Filtro Comunicación E2E",
+    role: "EMPLEABLE",
+    cohortId,
+  });
+  const senior = await upsertTestUser({
+    email: E2E_FILTRO_SENIOR,
+    name: "Filtro Sénior E2E",
+    role: "EMPLEABLE",
+    cohortId,
+  });
+
+  await withDbRetry(() =>
+    Promise.all([
+      prisma.talentProfile.upsert({
+        where: { ownerId: ing.id },
+        update: {},
+        create: {
+          ownerId: ing.id,
+          cohortId,
+          headline: "Filtro Ingeniería",
+          school: "Ingeniería",
+          experienceYears: 4,
+          experienceAreas: "Área de prueba",
+          linkedinUrl: "https://linkedin.com/in/e2e-filtro-ing",
+        },
+      }),
+      prisma.talentProfile.upsert({
+        where: { ownerId: com.id },
+        update: {},
+        create: {
+          ownerId: com.id,
+          cohortId,
+          headline: "Filtro Comunicación",
+          school: "Comunicación",
+          experienceYears: 3,
+          experienceAreas: "Área de prueba",
+          linkedinUrl: "https://linkedin.com/in/e2e-filtro-com",
+        },
+      }),
+      prisma.talentProfile.upsert({
+        where: { ownerId: senior.id },
+        update: {},
+        create: {
+          ownerId: senior.id,
+          cohortId,
+          headline: "Filtro Sénior",
+          school: "Ingeniería",
+          experienceYears: 10,
+          experienceAreas: "Área de prueba",
+          linkedinUrl: "https://linkedin.com/in/e2e-filtro-senior",
+        },
+      }),
+    ]),
+  );
 });
 
 test.afterAll(async () => {
-  await prisma.talentProfile.deleteMany({ where: { owner: { email: E2E_EMPLEABLE } } });
-  await prisma.user.deleteMany({ where: { email: E2E_EMPLEABLE } });
+  await prisma.talentProfile.deleteMany({
+    where: {
+      owner: { email: { in: [E2E_EMPLEABLE, E2E_FILTRO_ING, E2E_FILTRO_COM, E2E_FILTRO_SENIOR] } },
+    },
+  });
+  await prisma.user.deleteMany({
+    where: {
+      email: { in: [E2E_ADMIN, E2E_EMPLEABLE, E2E_FILTRO_ING, E2E_FILTRO_COM, E2E_FILTRO_SENIOR] },
+    },
+  });
   await prisma.$disconnect();
 });
 
 test("el filtro de /talento reduce la lista por escuela y por años de experiencia", async ({ page }) => {
-  await loginAs(page, "admin@demo.board", TEST_PASSWORD);
+  await loginAs(page, E2E_ADMIN, TEST_PASSWORD);
 
   await page.goto("/talento?school=Ingenier%C3%ADa");
-  await expect(page.getByText("Carlos Ruiz")).toBeVisible();
-  await expect(page.getByText("Valentina Correa")).not.toBeVisible();
+  await expect(page.getByText("Filtro Ingeniería E2E")).toBeVisible();
+  await expect(page.getByText("Filtro Comunicación E2E")).not.toBeVisible();
 
   await page.goto("/talento?minExperience=8");
-  await expect(page.getByText("Paula Andrea Restrepo")).toBeVisible();
-  await expect(page.getByText("Carlos Ruiz")).not.toBeVisible();
+  await expect(page.getByText("Filtro Sénior E2E")).toBeVisible();
+  await expect(page.getByText("Filtro Ingeniería E2E")).not.toBeVisible();
 });
 
 test("un empleable sube, descarga y elimina su hoja de vida desde /perfil", async ({ page }) => {

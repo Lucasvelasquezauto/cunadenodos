@@ -1,8 +1,28 @@
 import { test, expect } from "@playwright/test";
-import { loginAs, TEST_PASSWORD } from "./helpers";
+import { prisma } from "../lib/db";
+import { getActiveCohortId, loginAs, TEST_PASSWORD, upsertTestUser } from "./helpers";
+
+const E2E_ADMIN = "e2e-auth-admin@ejemplo.com";
+const E2E_EMPRENDEDOR = "e2e-auth-emprendedor@ejemplo.com";
+
+test.beforeAll(async () => {
+  const cohortId = await getActiveCohortId();
+  await upsertTestUser({ email: E2E_ADMIN, name: "Admin E2E", role: "ADMIN", cohortId });
+  await upsertTestUser({
+    email: E2E_EMPRENDEDOR,
+    name: "Emprendedor E2E",
+    role: "EMPRENDEDOR",
+    cohortId,
+  });
+});
+
+test.afterAll(async () => {
+  await prisma.user.deleteMany({ where: { email: { in: [E2E_ADMIN, E2E_EMPRENDEDOR] } } });
+  await prisma.$disconnect();
+});
 
 test("login exitoso con correo registrado deja una sesión válida", async ({ page }) => {
-  await loginAs(page, "admin@demo.board", TEST_PASSWORD);
+  await loginAs(page, E2E_ADMIN, TEST_PASSWORD);
   await expect(page).toHaveURL("/");
 });
 
@@ -15,14 +35,14 @@ test("correo no registrado es rechazado con mensaje claro, sin crear cuenta", as
 });
 
 test("un usuario sin rol admin no puede entrar a /admin", async ({ page }) => {
-  await loginAs(page, "emprendedor@demo.board", TEST_PASSWORD);
+  await loginAs(page, E2E_EMPRENDEDOR, TEST_PASSWORD);
   await page.goto("/admin");
   await expect(page).toHaveURL("/");
 });
 
 test("una contraseña incorrecta para un correo real es rechazada", async ({ page }) => {
   await page.goto("/login");
-  await page.fill('input[name="email"]', "admin@demo.board");
+  await page.fill('input[name="email"]', E2E_ADMIN);
   await page.fill('input[name="password"]', "contraseña-incorrecta");
   await page.click('button[type="submit"]');
   await expect(page.getByTestId("login-error")).toContainText("Usuario o contraseña incorrectos");

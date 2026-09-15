@@ -1,5 +1,7 @@
 import type { Page } from "@playwright/test";
+import type { Org, Role } from "@prisma/client";
 import { hashPassword } from "../lib/passwords";
+import { prisma } from "../lib/db";
 
 // Contraseña única para todas las cuentas creadas dentro de los tests e2e
 // (seed y las creadas ad-hoc en cada spec) — no hay nada secreto que
@@ -24,6 +26,34 @@ export async function withDbRetry<T>(fn: () => Promise<T>, attempts = 3): Promis
     }
   }
   throw lastError;
+}
+
+// Ningún test debe depender de las cuentas fijas de seed (admin@demo.board,
+// eafit@demo.board, etc.) — en el ambiente real esas cuentas ya tienen
+// contraseñas/usuarios reales y los perfiles ficticios fueron borrados (ver
+// memoria del proyecto, limpieza 2026-09-14). Cada spec crea y borra sus
+// propias cuentas efímeras con estos dos helpers.
+export async function getActiveCohortId(): Promise<string> {
+  const cohort = await withDbRetry(() => prisma.cohort.findFirst({ where: { isActive: true } }));
+  if (!cohort) throw new Error("No hay cohorte activa — corre el seed primero.");
+  return cohort.id;
+}
+
+export async function upsertTestUser(params: {
+  email: string;
+  name: string;
+  role: Role;
+  org?: Org;
+  cohortId: string;
+}) {
+  const passwordHash = await testPasswordHash();
+  return withDbRetry(() =>
+    prisma.user.upsert({
+      where: { email: params.email },
+      update: { passwordHash, name: params.name, role: params.role, org: params.org },
+      create: { ...params, passwordHash },
+    }),
+  );
 }
 
 export async function loginAs(page: Page, email: string, password: string): Promise<void> {

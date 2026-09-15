@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { prisma } from "../lib/db";
-import { loginAs, TEST_PASSWORD, withDbRetry } from "./helpers";
+import { getActiveCohortId, loginAs, TEST_PASSWORD, upsertTestUser, withDbRetry } from "./helpers";
 import { hashPassword } from "../lib/passwords";
 
+const E2E_ADMIN = "e2e-admin-accounts-admin@ejemplo.com";
 const INSTITUTION_USERNAME = "E2E-INSTITUCION-TEST";
 const INSTITUTION_PASSWORD = "InstPass123!";
 const RESET_TARGET_EMAIL = "e2e-reset-target@ejemplo.com";
@@ -12,13 +13,12 @@ const NEW_PASSWORD = "NewPass123!";
 let cohortId: string;
 
 test.beforeAll(async () => {
-  await withDbRetry(async () => {
-    const cohort = await prisma.cohort.findFirst({ where: { isActive: true } });
-    if (!cohort) throw new Error("No hay cohorte activa — corre el seed primero.");
-    cohortId = cohort.id;
+  cohortId = await getActiveCohortId();
+  await upsertTestUser({ email: E2E_ADMIN, name: "Admin E2E", role: "ADMIN", cohortId });
 
-    const passwordHash = await hashPassword(OLD_PASSWORD);
-    await prisma.user.upsert({
+  const passwordHash = await hashPassword(OLD_PASSWORD);
+  await withDbRetry(() =>
+    prisma.user.upsert({
       where: { email: RESET_TARGET_EMAIL },
       update: { passwordHash },
       create: {
@@ -28,19 +28,19 @@ test.beforeAll(async () => {
         cohortId,
         passwordHash,
       },
-    });
-  });
+    }),
+  );
 });
 
 test.afterAll(async () => {
   await prisma.user.deleteMany({
-    where: { email: { in: [INSTITUTION_USERNAME, RESET_TARGET_EMAIL] } },
+    where: { email: { in: [E2E_ADMIN, INSTITUTION_USERNAME, RESET_TARGET_EMAIL] } },
   });
   await prisma.$disconnect();
 });
 
 test("el admin crea una cuenta institución con usuario simple y esa cuenta entra sin link", async ({ page }) => {
-  await loginAs(page, "admin@demo.board", TEST_PASSWORD);
+  await loginAs(page, E2E_ADMIN, TEST_PASSWORD);
   await page.goto("/admin/users");
 
   await page.fill('input[name="email"]', INSTITUTION_USERNAME);
@@ -57,7 +57,7 @@ test("el admin crea una cuenta institución con usuario simple y esa cuenta entr
 });
 
 test("el admin genera un link de reset, la persona pone contraseña nueva, y el link no sirve dos veces", async ({ page }) => {
-  await loginAs(page, "admin@demo.board", TEST_PASSWORD);
+  await loginAs(page, E2E_ADMIN, TEST_PASSWORD);
   await page.goto("/admin/users");
 
   const row = page.locator("li", { hasText: RESET_TARGET_EMAIL });
